@@ -8,7 +8,7 @@ contract ChainList {
   uint256 price;
 
   //sell and article
-function sellArticle(string _name, string _description, uint245 _price) public {
+function sellArticle(string _name, string _description, uint256 _price) public {
   seller = msg.sender;
   name = _name;
   description = _description;
