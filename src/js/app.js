@@ -44,7 +44,10 @@ App = {
           App.contracts.ChainList = TruffleContract(chainListArtifact);
           //set the provider for the contracts
           App.contracts.ChainList.setProvider(App.web3Provider);
+          //listen to Events
+          App.listenToEvents();
           //Retrieve the article from the contracts
+          console.log("reload article from init");
           return App.reloadArticles();
 
         });
@@ -54,7 +57,7 @@ App = {
        //refresh account information
        App.displayAccountInfo();
        //retrieve the article placeholder and clear it
-       $('#articleRow').empty();
+       $('#articlesRow').empty();
        App.contracts.ChainList.deployed().then(function(instance){
          return instance.getArticle();
        }).then(function(article){
@@ -76,10 +79,56 @@ App = {
          articleTemplate.find('.article-seller').text(seller);
 
          //add article
+         console.log("add article");
          $('#articlesRow').append(articleTemplate.html());
 
        }).catch(function(err){
          console.error(err.message);
+       });
+     },
+
+     sellArticle : function(){
+       console.log("sellArticle function start");
+       //retrieve detail of the article
+       var _article_name = $('#article_name').val();
+       var _description = $('#article_description').val();
+       var _price = web3.toWei(parseFloat($('#article_price').val() || 0),"ether");
+
+       console.log("name :" + _article_name + "price :" + _price);
+
+       if(_article_name.trim() == '' || _price == 0){
+         //nothing to sell
+        console.log("nothing to sell");
+         return false;
+       }
+
+       App.contracts.ChainList.deployed().then(function(instance){
+         console.log("call smart contract sellArticle");
+         return instance.sellArticle(_article_name,_description,_price, {
+           from : App.account,
+           gas: 500000
+         });
+       }).then(function(result){
+       }).catch(function(err){
+         console.error(err.message);
+       });
+     },
+
+     //listen to events triggered by the contract
+     listenToEvents: function(){
+        console.log("listen start");
+       App.contracts.ChainList.deployed().then(function(instance){
+         instance.LogSellArticle({},{}).watch(function(error,event){
+           if(!error){
+
+             $("#events").append('<li class="list-group-item">' + event.args._name + ' is now for sale</li>');
+           }else {
+             console.error(error.message);
+           }
+           console.log("reload article from listener");
+           App.reloadArticles();
+
+         });
        });
      }
 };
