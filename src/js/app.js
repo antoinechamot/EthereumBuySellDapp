@@ -66,10 +66,15 @@ App = {
            return;
          }
 
+         var price = web3.fromWei(article[4],"ether");
+         console.log("article price: " +  price);
+
+
          var articleTemplate = $('#articleTemplate');
-         articleTemplate.find('.panel-title').text(article[1]);
-         articleTemplate.find('.article-description').text(article[2]);
-         articleTemplate.find('.article-price').text(web3.fromWei(article[3],"ether"));
+         articleTemplate.find('.panel-title').text(article[2]);
+         articleTemplate.find('.article-description').text(article[3]);
+         articleTemplate.find('.article-price').text(price);
+         articleTemplate.find('.btn-buy').attr('data-value', price);
 
          var seller = article [0];
          if(seller == App.account){
@@ -77,6 +82,22 @@ App = {
          }
 
          articleTemplate.find('.article-seller').text(seller);
+
+         //buyer
+         var buyer = article[1];
+         if(buyer == App.account){
+           buyer = "You";
+         }else if (buyer == 0x0){
+           buyer = "No one yet";
+         }
+          console.log("article buyer : " +  buyer);
+         articleTemplate.find('.article-buyer').text(buyer);
+
+         if(article[0] == App.account || article[1] != 0x0){
+           articleTemplate.find('.btn-buy').hide();
+         }else{
+           articleTemplate.find('.btn-buy').show();
+         }
 
          //add article
          console.log("add article");
@@ -129,6 +150,35 @@ App = {
            App.reloadArticles();
 
          });
+
+         instance.LogBuyArticle({},{}).watch(function(error,event){
+           if(!error){
+             $("#events").append('<li class="list-group-item">' + event.args._buyer + ' bought ' + event.args._name + '</li>');
+           }else {
+             console.error(error.message);
+           }
+           console.log("reload article from listener");
+           App.reloadArticles();
+
+         });
+
+       });
+     },
+
+     buyArticle: function(){
+       event.preventDefault();
+       //retrieve the article Price
+       var _price = parseFloat($(event.target).data('value'));
+       console.log("prix achat :" + _price);
+
+       App.contracts.ChainList.deployed().then(function(instance){
+         return instance.buyArticle({
+           from: App.account,
+           value: web3.toWei(_price,"ether"),
+           gas: 500000
+         });
+       }).catch(function(error){
+         console.error(error);
        });
      }
 };
